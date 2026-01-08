@@ -7,9 +7,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Controller
 public class StockController {
 
@@ -50,11 +47,14 @@ public class StockController {
 
     @GetMapping("/search")
     public String searchStock(@RequestParam("query") String query, @RequestParam("type") String type, Model model) {
-        List<Stock> results = new ArrayList<>();
+        Stock[] results;
         if ("binary".equalsIgnoreCase(type)) {
             Stock s = stockService.binarySearch(query);
-            if (s != null)
-                results.add(s);
+            if (s != null) {
+                results = new Stock[] { s };
+            } else {
+                results = new Stock[0];
+            }
         } else {
             results = stockService.linearSearch(query);
         }

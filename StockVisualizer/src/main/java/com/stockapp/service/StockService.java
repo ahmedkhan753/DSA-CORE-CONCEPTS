@@ -3,57 +3,60 @@ package com.stockapp.service;
 import com.stockapp.model.Stock;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 @Service
 public class StockService {
 
-    private List<Stock> portfolio = new ArrayList<>();
+    // RAW Array implementation as per user request
+    private Stock[] portfolio = new Stock[0];
 
+    // Added new stock by manually resizing array (O(N))
     public void addStock(Stock stock) {
-        portfolio.add(stock);
+        Stock[] temp = new Stock[portfolio.length + 1];
+        // Manual copy
+        for (int i = 0; i < portfolio.length; i++) {
+            temp[i] = portfolio[i];
+        }
+        temp[portfolio.length] = stock;
+        portfolio = temp;
     }
 
-    public List<Stock> getAllStocks() {
+    public Stock[] getAllStocks() {
         return portfolio;
     }
 
     // --- Searching ---
 
-    public List<Stock> linearSearch(String name) {
-        List<Stock> result = new ArrayList<>();
-        for (Stock stock : portfolio) {
-            if (stock.getStockName().equalsIgnoreCase(name)) {
-                result.add(stock);
+    public Stock[] linearSearch(String name) {
+        // First count matches to create exact size array
+        int count = 0;
+        for (int i = 0; i < portfolio.length; i++) {
+            if (portfolio[i].getStockName().equalsIgnoreCase(name)) {
+                count++;
             }
         }
-        return result;
+
+        Stock[] results = new Stock[count];
+        int index = 0;
+        for (int i = 0; i < portfolio.length; i++) {
+            if (portfolio[i].getStockName().equalsIgnoreCase(name)) {
+                results[index++] = portfolio[i];
+            }
+        }
+        return results;
     }
 
     public Stock binarySearch(String name) {
-        // Must sort first for binary search
-        quickSort(portfolio, 0, portfolio.size() - 1);
-
-        // Sort specifically by name for name-based binary search since quicksort did
-        // price?
-        // Actually, let's keep it simple: Binary Search usually implies the data is
-        // sorted by the key we are searching.
-        // The previous CLI code sorted by name before binary search.
-
-        List<Stock> sortedByName = new ArrayList<>(portfolio);
-        Collections.sort(sortedByName, (a, b) -> a.getStockName().compareToIgnoreCase(b.getStockName()));
+        sortByName();
 
         int left = 0;
-        int right = sortedByName.size() - 1;
+        int right = portfolio.length - 1;
 
         while (left <= right) {
             int mid = left + (right - left) / 2;
-            int comparison = sortedByName.get(mid).getStockName().compareToIgnoreCase(name);
+            int comparison = portfolio[mid].getStockName().compareToIgnoreCase(name);
 
             if (comparison == 0) {
-                return sortedByName.get(mid);
+                return portfolio[mid];
             } else if (comparison < 0) {
                 left = mid + 1;
             } else {
@@ -63,97 +66,127 @@ public class StockService {
         return null;
     }
 
-    // --- Sorting ---
-
-    public void bubbleSort() {
-        int n = portfolio.size();
+    // --- Helper Sort by Name for Binary Search ---
+    private void sortByName() {
+        int n = portfolio.length;
         for (int i = 0; i < n - 1; i++) {
             for (int j = 0; j < n - i - 1; j++) {
-                if (portfolio.get(j).getStockPrice() > portfolio.get(j + 1).getStockPrice()) {
-                    Collections.swap(portfolio, j, j + 1);
+                if (portfolio[j].getStockName().compareToIgnoreCase(portfolio[j + 1].getStockName()) > 0) {
+                    Stock temp = portfolio[j];
+                    portfolio[j] = portfolio[j + 1];
+                    portfolio[j + 1] = temp;
                 }
             }
+        }
+    }
+
+    // --- Sorting Algorithms (By Price) ---
+
+    public void bubbleSort() {
+        int n = portfolio.length;
+        boolean swapped;
+        for (int i = 0; i < n - 1; i++) {
+            swapped = false;
+            for (int j = 0; j < n - i - 1; j++) {
+                if (portfolio[j].getStockPrice() > portfolio[j + 1].getStockPrice()) {
+                    Stock temp = portfolio[j];
+                    portfolio[j] = portfolio[j + 1];
+                    portfolio[j + 1] = temp;
+                    swapped = true;
+                }
+            }
+            if (!swapped)
+                break;
         }
     }
 
     public void selectionSort() {
-        int n = portfolio.size();
+        int n = portfolio.length;
         for (int i = 0; i < n - 1; i++) {
             int minIndex = i;
             for (int j = i + 1; j < n; j++) {
-                if (portfolio.get(j).getStockPrice() < portfolio.get(minIndex).getStockPrice()) {
+                if (portfolio[j].getStockPrice() < portfolio[minIndex].getStockPrice()) {
                     minIndex = j;
                 }
             }
-            Collections.swap(portfolio, minIndex, i);
+            Stock temp = portfolio[minIndex];
+            portfolio[minIndex] = portfolio[i];
+            portfolio[i] = temp;
         }
     }
 
+    // Merge Sort
     public void mergeSort() {
-        // Helper to trigger merge sort on the list
-        if (portfolio.size() > 1) {
-            List<Stock> sorted = mergeSortHelper(portfolio);
-            portfolio.clear();
-            portfolio.addAll(sorted);
-        }
+        divide(portfolio, 0, portfolio.length - 1);
     }
 
-    private List<Stock> mergeSortHelper(List<Stock> list) {
-        if (list.size() <= 1) {
-            return list;
+    private void divide(Stock[] arr, int si, int ei) {
+        if (si >= ei) {
+            return;
         }
-        int mid = list.size() / 2;
-        List<Stock> left = mergeSortHelper(new ArrayList<>(list.subList(0, mid)));
-        List<Stock> right = mergeSortHelper(new ArrayList<>(list.subList(mid, list.size())));
-        return merge(left, right);
+        int mid = si + (ei - si) / 2;
+        divide(arr, si, mid);
+        divide(arr, mid + 1, ei);
+        conquer(arr, si, mid, ei);
     }
 
-    private List<Stock> merge(List<Stock> left, List<Stock> right) {
-        List<Stock> merged = new ArrayList<>();
-        int i = 0, j = 0;
-        while (i < left.size() && j < right.size()) {
-            if (left.get(i).getStockPrice() <= right.get(j).getStockPrice()) {
-                merged.add(left.get(i++));
+    private void conquer(Stock[] arr, int si, int mid, int ei) {
+        Stock[] mergedArray = new Stock[ei - si + 1];
+        int indx1 = si;
+        int indx2 = mid + 1;
+        int x = 0;
+
+        while (indx1 <= mid && indx2 <= ei) {
+            if (arr[indx1].getStockPrice() <= arr[indx2].getStockPrice()) {
+                mergedArray[x++] = arr[indx1++];
             } else {
-                merged.add(right.get(j++));
+                mergedArray[x++] = arr[indx2++];
             }
         }
-        while (i < left.size())
-            merged.add(left.get(i++));
-        while (j < right.size())
-            merged.add(right.get(j++));
-        return merged;
+
+        while (indx1 <= mid) {
+            mergedArray[x++] = arr[indx1++];
+        }
+
+        while (indx2 <= ei) {
+            mergedArray[x++] = arr[indx2++];
+        }
+
+        for (int i = 0, j = si; i < mergedArray.length; i++, j++) {
+            arr[j] = mergedArray[i];
+        }
     }
 
+    // Quick Sort
     public void quickSort() {
-        if (portfolio.size() > 0) {
-            quickSortHelper(portfolio, 0, portfolio.size() - 1);
+        if (portfolio.length > 0) {
+            quick(portfolio, 0, portfolio.length - 1);
         }
     }
 
-    // Using simple recursive Helper with existing List reference
-    public void quickSortHelper(List<Stock> list, int low, int high) {
+    private void quick(Stock[] arr, int low, int high) {
         if (low < high) {
-            int pi = partition(list, low, high);
-            quickSortHelper(list, low, pi - 1);
-            quickSortHelper(list, pi + 1, high);
+            int pi = partition(arr, low, high);
+            quick(arr, low, pi - 1);
+            quick(arr, pi + 1, high);
         }
     }
 
-    private void quickSort(List<Stock> list, int low, int high) {
-        quickSortHelper(list, low, high);
-    }
+    private int partition(Stock[] arr, int low, int high) {
+        double pivot = arr[high].getStockPrice();
+        int i = low - 1;
 
-    private int partition(List<Stock> list, int low, int high) {
-        double pivot = list.get(high).getStockPrice();
-        int i = (low - 1);
         for (int j = low; j < high; j++) {
-            if (list.get(j).getStockPrice() < pivot) {
+            if (arr[j].getStockPrice() < pivot) {
                 i++;
-                Collections.swap(list, i, j);
+                Stock temp = arr[i];
+                arr[i] = arr[j];
+                arr[j] = temp;
             }
         }
-        Collections.swap(list, i + 1, high);
+        Stock temp = arr[i + 1];
+        arr[i + 1] = arr[high];
+        arr[high] = temp;
         return i + 1;
     }
 }
