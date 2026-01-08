@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Stock Visualizer</title>
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Stock Management System</h1>
+        <p>Visualize Searching and Sorting Algorithms</p>
+    </header>
+
+    <!-- Add Stock Section -->
+    <section class="card form-section">
+        <h2>Add Stock to Portfolio</h2>
+        <form action="#" th:action="@{/addStock}" th:object="${newStock}" method="post" class="stock-form">
+            <div class="form-group">
+                <input type="text" th:field="*{stockName}" placeholder="Stock Name" required>
+            </div>
+            <div class="form-group">
+                <input type="number" step="0.01" th:field="*{stockPrice}" placeholder="Stock Price" required>
+            </div>
+            <div class="form-group">
+                <input type="number" th:field="*{stockQuantity}" placeholder="Quantity" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Add Stock</button>
+        </form>
+    </section>
+
+    <!-- Control Panel: Search & Sort -->
+    <section class="card control-panel">
+        <div class="search-box">
+            <h3>Search</h3>
+            <form action="#" th:action="@{/search}" method="get">
+                <input type="text" name="query" placeholder="Enter Stock Name..." th:value="${searchQuery}">
+                <select name="type">
+                    <option value="linear">Linear Search</option>
+                    <option value="binary">Binary Search</option>
+                </select>
+                <button type="submit" class="btn btn-secondary">Search</button>
+            </form>
+            
+            <!-- Search Results Display -->
+            <div th:if="${searchResults != null}" class="search-results">
+                <h4>Search Results:</h4>
+                <div th:if="${#lists.isEmpty(searchResults)}" class="alert alert-error">Stock not found.</div>
+                <div th:unless="${#lists.isEmpty(searchResults)}" class="result-list">
+                    <div th:each="stock : ${searchResults}" class="stock-item highlight">
+                        <span th:text="${stock.stockName}">Name</span>
+                        <span th:text="'$' + ${stock.stockPrice}">Price</span>
+                        <span th:text="'Qty: ' + ${stock.stockQuantity}">Qty</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sort-box">
+            <h3>Sort by Price</h3>
+            <div class="sort-buttons">
+                <a th:href="@{/sort(algorithm='bubble')}" class="btn btn-outline">Bubble Sort</a>
+                <a th:href="@{/sort(algorithm='selection')}" class="btn btn-outline">Selection Sort</a>
+                <a th:href="@{/sort(algorithm='merge')}" class="btn btn-outline">Merge Sort</a>
+                <a th:href="@{/sort(algorithm='quick')}" class="btn btn-outline">Quick Sort</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Portfolio Display -->
+    <section class="portfolio-section">
+        <h2>Current Portfolio</h2>
+        <div class="stock-grid">
+            <div th:each="stock : ${stocks}" class="stock-card">
+                <div class="stock-header">
+                    <h3 th:text="${stock.stockName}">AAPL</h3>
+                    <span class="stock-price" th:text="'$' + ${#numbers.formatDecimal(stock.stockPrice, 1, 2)}">$150.00</span>
+                </div>
+                <div class="stock-details">
+                    <p>Quantity: <span th:text="${stock.stockQuantity}">10</span></p>
+                    <p>Total Value: <span th:text="'$' + ${#numbers.formatDecimal(stock.stockPrice * stock.stockQuantity, 1, 2)}">$1500.00</span></p>
+                </div>
+            </div>
+            <div th:if="${#lists.isEmpty(stocks)}" class="empty-state">
+                No stocks in portfolio. Add some above!
+            </div>
+        </div>
+    </section>
+</div>
+
+</body>
+</html>
